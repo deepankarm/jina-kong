@@ -57,7 +57,7 @@ services:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 http2 ssl, 0.0.0.0:9080 http2, 0.0.0.0:9081 http2 ssl
-      KONG_ADMIN_LISTEN: "${KONG_ADMIN_LISTEN:-0.0.0.0:8001}"
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_PREFIX: ${KONG_PREFIX:-/var/run/kong}
@@ -112,13 +112,22 @@ services:
     volumes:
       - kong_data:/var/lib/postgresql/data
 
-  executor0:
-    image: jinaai/jina:3.6.4-standard
-    entrypoint: jina executor --port 12345
+  flow-http:
+    image: jinaai/jina:3.6.3-standard
+    entrypoint: 
+      /bin/sh -c "echo \"$$FLOW_YAML\" > /tmp/flow.yml; cat /tmp/flow.yml; jina flow --uses /tmp/flow.yml"
     networks:
       - kong-net
     environment:
       JINA_LOG_LEVEL: DEBUG
+      FLOW_YAML: |
+        jtype: Flow
+        with:
+          port: 12345
+          protocol: http
+        executors:
+          - uses: jinahub://Sentencizer
+            install_requirements: true
 
   flow-grpc:
     image: jinaai/jina:3.6.3-standard
@@ -131,25 +140,8 @@ services:
       FLOW_YAML: |
         jtype: Flow
         with:
-          port: 12346
+          port: 23456
           protocol: grpc
-        executors:
-          - uses: jinahub://Sentencizer
-            install_requirements: true
-
-  flow-http:
-    image: jinaai/jina:3.6.3-standard
-    entrypoint: 
-      /bin/sh -c "echo \"$$FLOW_YAML\" > /tmp/flow.yml; cat /tmp/flow.yml; jina flow --uses /tmp/flow.yml"
-    networks:
-      - kong-net
-    environment:
-      JINA_LOG_LEVEL: DEBUG
-      FLOW_YAML: |
-        jtype: Flow
-        with:
-          port: 12347
-          protocol: http
         executors:
           - uses: jinahub://Sentencizer
             install_requirements: true
@@ -165,11 +157,19 @@ services:
       FLOW_YAML: |
         jtype: Flow
         with:
-          port: 12348
+          port: 34567
           protocol: websocket
         executors:
           - uses: jinahub://Sentencizer
             install_requirements: true
+  
+  executor0:
+    image: jinaai/jina:3.6.4-standard
+    entrypoint: jina executor --port 45678
+    networks:
+      - kong-net
+    environment:
+      JINA_LOG_LEVEL: DEBUG
     
 secrets:
   kong_postgres_password:
