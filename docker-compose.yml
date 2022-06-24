@@ -50,7 +50,7 @@ services:
     restart: on-failure
 
   kong:
-    image: "${KONG_DOCKER_TAG:-kong:latest}"
+    image: "${KONG_DOCKER_TAG:-kong:jina}"
     user: "${KONG_USER:-kong}"
     environment:
       <<: *kong-env
@@ -62,6 +62,7 @@ services:
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_PREFIX: ${KONG_PREFIX:-/var/run/kong}
       KONG_LOG_LEVEL: debug
+      KONG_PLUGINS: bundled,jina-auth
     secrets:
       - kong_postgres_password
     networks:
